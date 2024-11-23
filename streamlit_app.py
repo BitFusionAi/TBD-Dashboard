@@ -5,9 +5,9 @@ import os
 import time
 
 # Load API key from Streamlit secrets
-api_key = st.secrets["TAO_API_KEY"]
+api_key = st.secrets["TAO_API_KEY"]["value"] if isinstance(st.secrets["TAO_API_KEY"], dict) else st.secrets["TAO_API_KEY"]
 if not api_key:
-    st.error("API key not found. Ensure the Streamlit secrets are set up correctly and contain TAO_API_KEY.")
+    st.error("API key not found. Ensure the Streamlit secrets are set up correctly and contain 'TAO_API_KEY'.")
     import sys
     sys.exit("Exiting application due to missing API key.")
 
