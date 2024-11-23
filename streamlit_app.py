@@ -39,7 +39,7 @@ def get_tao_data():
 # Draw the actual page
 
 # Set the title that appears at the top of the page.
-st.title('🩡 TBD Dashboard :pick:')
+st.title('🫡 TBD Dashboard :pick:')
 
 # Auto-update data every 30 seconds
 placeholder = st.empty()
