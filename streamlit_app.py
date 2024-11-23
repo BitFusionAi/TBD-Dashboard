@@ -25,15 +25,19 @@ st.set_page_config(
 def get_tao_data():
     """Fetch TAO data from the TaoStats API."""
     api_url = "https://api.taostats.io/api/price/latest/v1?asset=tao"  # Corrected endpoint URL
-    api_key = os.getenv("TAO_API_KEY")  # Get the API key from environment variables
+    api_key = os.getenv("TAO_API_KEY")
+    if not api_key:
+        st.error("API key not found. Ensure the .env file is set up correctly and contains TAO_API_KEY.")
+        import sys
+        sys.exit("Exiting application due to missing API key.")  # Get the API key from environment variables
     headers = {
-        'Authorization': api_key,  # Ensure API key is used correctly
+        'Authorization': f'{api_key}',  # Ensure API key is used correctly
         'accept': 'application/json'
     }
     try:
         response = requests.get(api_url, headers=headers)
         if response.status_code == 401:
-            st.error("Unauthorized access. Please check your API key.")
+            st.error("Unauthorized access. Please check your API key in the .env file and ensure it is valid.")
         response.raise_for_status()
         return response.json()['data'][0]
     except requests.exceptions.HTTPError as http_err:
