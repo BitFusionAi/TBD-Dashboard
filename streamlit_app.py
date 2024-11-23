@@ -138,4 +138,4 @@ while True:
         st.warning("Couldn't retrieve TAO data. Please try again later.")
 
     # Wait for 30 seconds before updating the data
-    time.sleep(30)
+    time.sleep(1800)
