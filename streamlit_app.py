@@ -6,7 +6,12 @@ from dotenv import load_dotenv
 import time
 
 # Load environment variables from the .env file
-load_dotenv()
+try:
+    load_dotenv()
+except ModuleNotFoundError:
+    st.error("Missing required module 'dotenv'. Please install it by running 'pip install python-dotenv'.")
+    import sys
+    sys.exit("Exiting application due to missing dependency 'dotenv'.")
 
 # Set the title and favicon that appear in the Browser's tab bar.
 st.set_page_config(
@@ -22,11 +27,13 @@ def get_tao_data():
     api_url = "https://api.taostats.io/api/price/latest/v1?asset=tao"  # Corrected endpoint URL
     api_key = os.getenv("TAO_API_KEY")  # Get the API key from environment variables
     headers = {
-        'Authorization': api_key,
+        'Authorization': api_key,  # Ensure API key is used correctly
         'accept': 'application/json'
     }
     try:
         response = requests.get(api_url, headers=headers)
+        if response.status_code == 401:
+            st.error("Unauthorized access. Please check your API key.")
         response.raise_for_status()
         return response.json()['data'][0]
     except requests.exceptions.HTTPError as http_err:
@@ -39,7 +46,7 @@ def get_tao_data():
 # Draw the actual page
 
 # Set the title that appears at the top of the page.
-st.title('🫡 TBD Dashboard :pick:')
+st.title('🩡 TBD Dashboard :pick:')
 
 # Auto-update data every 30 seconds
 placeholder = st.empty()
