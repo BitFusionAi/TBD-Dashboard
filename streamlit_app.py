@@ -1,151 +1,136 @@
 import streamlit as st
-import pandas as pd
-import math
-from pathlib import Path
+import requests
+import json
+import os
+from dotenv import load_dotenv
+import time
+
+# Load environment variables from the .env file
+load_dotenv()
 
 # Set the title and favicon that appear in the Browser's tab bar.
 st.set_page_config(
-    page_title='GDP dashboard',
-    page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.
+    page_title='TBD Dashboard',
+    page_icon=':pick:',
 )
 
 # -----------------------------------------------------------------------------
-# Declare some useful functions.
+# Function to get TAO data from TaoStats API.
 
-@st.cache_data
-def get_gdp_data():
-    """Grab GDP data from a CSV file.
+def get_tao_data():
+    """Fetch TAO data from the TaoStats API."""
+    api_url = "https://api.taostats.io/api/price/latest/v1?asset=tao"  # Corrected endpoint URL
+    api_key = os.getenv("TAO_API_KEY")  # Get the API key from environment variables
+    headers = {
+        'Authorization': api_key,
+        'accept': 'application/json'
+    }
+    try:
+        response = requests.get(api_url, headers=headers)
+        response.raise_for_status()
+        return response.json()['data'][0]
+    except requests.exceptions.HTTPError as http_err:
+        st.error(f"HTTP error occurred: {http_err}")
+    except requests.exceptions.RequestException as req_err:
+        st.error(f"Error fetching data: {req_err}")
+    return None
 
-    This uses caching to avoid having to read the file every time. If we were
-    reading from an HTTP endpoint instead of a file, it's a good idea to set
-    a maximum age to the cache with the TTL argument: @st.cache_data(ttl='1d')
-    """
-
-    # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
-    DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
-    raw_gdp_df = pd.read_csv(DATA_FILENAME)
-
-    MIN_YEAR = 1960
-    MAX_YEAR = 2022
-
-    # The data above has columns like:
-    # - Country Name
-    # - Country Code
-    # - [Stuff I don't care about]
-    # - GDP for 1960
-    # - GDP for 1961
-    # - GDP for 1962
-    # - ...
-    # - GDP for 2022
-    #
-    # ...but I want this instead:
-    # - Country Name
-    # - Country Code
-    # - Year
-    # - GDP
-    #
-    # So let's pivot all those year-columns into two: Year and GDP
-    gdp_df = raw_gdp_df.melt(
-        ['Country Code'],
-        [str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)],
-        'Year',
-        'GDP',
-    )
-
-    # Convert years from string to integers
-    gdp_df['Year'] = pd.to_numeric(gdp_df['Year'])
-
-    return gdp_df
-
-gdp_df = get_gdp_data()
-
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Draw the actual page
 
 # Set the title that appears at the top of the page.
-'''
-# :earth_americas: GDP dashboard Test
+st.title('🩡 TBD Dashboard :pick:')
 
-Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
-notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
-But it's otherwise a great (and did I mention _free_?) source of data.
-'''
+# Auto-update data every 30 seconds
+placeholder = st.empty()
 
-# Add some spacing
-''
-''
+while True:
+    tao_data = get_tao_data()
 
-min_value = gdp_df['Year'].min()
-max_value = gdp_df['Year'].max()
+    if tao_data:
+        with placeholder.container():
+            # Display metrics for TAO
+            st.header('Bittensor (TAO) Metrics', divider='gray')
+            ''
+            
+            # Set up columns for the metrics
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.metric(
+                    label="Current Price (USD)",
+                    value=f"${float(tao_data['price']):,.2f}",
+                    delta=f"{float(tao_data['percent_change_24h']):.2f}% (24h)"
+                )
 
-from_year, to_year = st.slider(
-    'Which years are you interested in?',
-    min_value=min_value,
-    max_value=max_value,
-    value=[min_value, max_value])
+            with col2:
+                st.metric(
+                    label="Circulating Supply",
+                    value=f"{int(float(tao_data['circulating_supply'])):,} T"
+                )
+            
+            with col3:
+                st.metric(
+                    label="Max Supply",
+                    value=f"{int(float(tao_data['max_supply'])):,} T"
+                )
+            
+            ''
+            col4, col5 = st.columns(2)
+            
+            with col4:
+                st.metric(
+                    label="Market Cap (USD)",
+                    value=f"${float(tao_data['market_cap']):,.2f}"
+                )
+            
+            # with col5:
+            #     st.metric(
+            #         label="Fully Diluted Market Cap (USD)",
+            #         value=f"${float(tao_data['fully_diluted_market_cap']):,.2f}"
+            #     )
+            
+            with col5:
+                st.metric(
+                    label="Volume (24h)",
+                    value=f"${float(tao_data['volume_24h']):,.2f}"
+                )
+            
+            # Add more detailed price changes
+            st.subheader('Price Changes Over Different Timeframes', divider='gray')
+            ''
+            st.markdown(
+                """
+                <style>
+                .positive {
+                    color: green;
+                }
+                .negative {
+                    color: red;
+                }
+                </style>
+                """,
+                unsafe_allow_html=True
+            )
 
-countries = gdp_df['Country Code'].unique()
+            # Price change details with conditional coloring
+            price_changes = {
+                "1 Hour": float(tao_data['percent_change_1h']),
+                "24 Hours": float(tao_data['percent_change_24h']),
+                "7 Days": float(tao_data['percent_change_7d']),
+                "30 Days": float(tao_data['percent_change_30d']),
+                "60 Days": float(tao_data['percent_change_60d']),
+                "90 Days": float(tao_data['percent_change_90d']),
+            }
 
-if not len(countries):
-    st.warning("Select at least one country")
+            for timeframe, change in price_changes.items():
+                color_class = "positive" if change >= 0 else "negative"
+                st.markdown(
+                    f"- **{timeframe}**: <span class='{color_class}'>{change:+.2f}%</span>",
+                    unsafe_allow_html=True
+                )
+    else:
+        st.warning("Couldn't retrieve TAO data. Please try again later.")
 
-selected_countries = st.multiselect(
-    'Which countries would you like to view?',
-    countries,
-    ['DEU', 'FRA', 'GBR', 'BRA', 'MEX', 'JPN'])
-
-''
-''
-''
-
-# Filter the data
-filtered_gdp_df = gdp_df[
-    (gdp_df['Country Code'].isin(selected_countries))
-    & (gdp_df['Year'] <= to_year)
-    & (from_year <= gdp_df['Year'])
-]
-
-st.header('GDP over time', divider='gray')
-
-''
-
-st.line_chart(
-    filtered_gdp_df,
-    x='Year',
-    y='GDP',
-    color='Country Code',
-)
-
-''
-''
-
-
-first_year = gdp_df[gdp_df['Year'] == from_year]
-last_year = gdp_df[gdp_df['Year'] == to_year]
-
-st.header(f'GDP in {to_year}', divider='gray')
-
-''
-
-cols = st.columns(4)
-
-for i, country in enumerate(selected_countries):
-    col = cols[i % len(cols)]
-
-    with col:
-        first_gdp = first_year[first_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-        last_gdp = last_year[last_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-
-        if math.isnan(first_gdp):
-            growth = 'n/a'
-            delta_color = 'off'
-        else:
-            growth = f'{last_gdp / first_gdp:,.2f}x'
-            delta_color = 'normal'
-
-        st.metric(
-            label=f'{country} GDP',
-            value=f'{last_gdp:,.0f}B',
-            delta=growth,
-            delta_color=delta_color
-        )
+    # Wait for 30 seconds before updating the data
+    time.sleep(30)
