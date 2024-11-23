@@ -5,11 +5,11 @@ import os
 import time
 
 # Load API key from Streamlit secrets
-api_key = st.secrets["TAO_API_KEY"]
-if not api_key:
-    st.error("API key not found. Ensure the Streamlit secrets are set up correctly and contain 'TAO_API_KEY'.")
-    import sys
-    sys.exit("Exiting application due to missing API key.")
+# api_key = st.secrets["TAO_API_KEY"]
+# if not api_key:
+#     st.error("API key not found. Ensure the Streamlit secrets are set up correctly and contain 'TAO_API_KEY'.")
+#     import sys
+#     sys.exit("Exiting application due to missing API key.")
 
 # Set the title and favicon that appear in the Browser's tab bar.
 st.set_page_config(
