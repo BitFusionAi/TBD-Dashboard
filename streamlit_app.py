@@ -5,7 +5,7 @@ import os
 import time
 
 # Load API key from Streamlit secrets
-api_key = st.secrets["TAO_API_KEY"]["value"] if isinstance(st.secrets["TAO_API_KEY"], dict) else st.secrets["TAO_API_KEY"]
+api_key = st.secrets["TAO_API_KEY"]
 if not api_key:
     st.error("API key not found. Ensure the Streamlit secrets are set up correctly and contain 'TAO_API_KEY'.")
     import sys
@@ -25,7 +25,7 @@ def get_tao_data():
     api_url = "https://api.taostats.io/api/price/latest/v1?asset=tao"  # Corrected endpoint URL
       # Get the API key from environment variables
     headers = {
-        'Authorization': str(api_key),  # Ensure API key is used correctly
+        'Authorization': "oMsSsdmi9ILQpk3Cokql3C0VPsutpKoy4O2y3RrhNn2qOxJcha7E1RbR2LTnI4E0",  # Ensure API key is used correctly
         'accept': 'application/json'
     }
     try:
@@ -44,7 +44,7 @@ def get_tao_data():
 # Draw the actual page
 
 # Set the title that appears at the top of the page.
-st.title('🩡 TBD Dashboard :pick:')
+st.title('🫡 TBD Dashboard :pick:')
 
 # Auto-update data every 30 seconds
 placeholder = st.empty()
